@@ -44,7 +44,7 @@ api = APIRouter()
 # log on restart. Swap for Redis when there is more than one worker.
 LIVE: dict[str, Negotiation] = {}
 
-OFFER = re.compile(r"\$?\s?(\d{2,6})(?:\s?(?:bucks|dollars|usd))?", re.I)
+OFFER = re.compile(r"\$?\s?(\d{2,6})(?:\s?(?:bucks|dollars|usd))?", re.IGNORECASE)
 
 
 def read_offer(text: str) -> float | None:
@@ -96,7 +96,7 @@ async def publish(listing_id: str):
         retail_id=l.retail_id,
         name=l.name,
         description=l.description,
-        price_cents=int(round(l.price * 100)),
+        price_cents=round(l.price * 100),
         image_url=l.image_url,
     )
     store.log("listing_published", listing_id=listing_id, meta=res)
