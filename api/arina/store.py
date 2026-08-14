@@ -73,3 +73,22 @@ def export_events(kind: str | None = None) -> list[dict]:
          "thread_id": r["thread_id"], **json.loads(r["payload"])}
         for r in rows
     ]
+
+
+def thread_ids() -> list[str]:
+    """Every thread ever opened, oldest first. The starting point for
+    rebuilding live negotiations after a restart."""
+    with conn() as c:
+        rows = c.execute("SELECT id FROM threads ORDER BY updated, id").fetchall()
+    return [r["id"] for r in rows]
+
+
+def thread_events(thread_id: str) -> list[dict]:
+    """Every event for one thread, in the order they happened. `id` is a
+    monotonic autoincrement, so ordering by it is chronological."""
+    with conn() as c:
+        rows = c.execute(
+            "SELECT kind, payload FROM events WHERE thread_id = ? ORDER BY id",
+            (thread_id,),
+        ).fetchall()
+    return [{"kind": r["kind"], **json.loads(r["payload"])} for r in rows]

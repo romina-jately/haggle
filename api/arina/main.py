@@ -15,9 +15,11 @@ POST /webhooks/whatsapp        inbound from Meta
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 import re
+from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
 
@@ -25,7 +27,17 @@ from . import llm, store, whatsapp
 from .bargaining import Negotiation, Policy
 from .models import AgentTurn, BuyerTurn, ListingIn, ListingOut, PolicyIn
 
-app = FastAPI(title="Arina", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # A restart must not drop open negotiations. Every thread is
+    # reconstructable from its event log, so rebuild them all before the
+    # first request. See CLAUDE.md build order item 1.
+    rehydrate()
+    yield
+
+
+app = FastAPI(title="Arina", version="0.1.0", lifespan=lifespan)
 api = APIRouter()
 
 # Threads live in memory between requests and are rehydrated from the event
@@ -116,7 +128,8 @@ def _policy_for(listing_id: str) -> Policy:
 
 @api.post("/threads")
 def open_thread(listing_id: str, buyer: str):
-    n = Negotiation(policy=_policy_for(listing_id))
+    policy = _policy_for(listing_id)
+    n = Negotiation(policy=policy)
     tid = store.new_id("thr")
     LIVE[tid] = n
     with store.conn() as c:
@@ -124,7 +137,16 @@ def open_thread(listing_id: str, buyer: str):
             "INSERT INTO threads(id, listing_id, buyer, state, status, updated) VALUES (?,?,?,?,?,?)",
             (tid, listing_id, buyer, "{}", "open", __import__("time").time()),
         )
-    store.log("thread_opened", listing_id=listing_id, thread_id=tid, buyer=buyer)
+    # Snapshot the policy into the event log. A thread negotiates under the
+    # policy in force when it opened; a later edit to the listing's policy
+    # must not change how an in-flight thread replays on restart.
+    store.log(
+        "thread_opened",
+        listing_id=listing_id,
+        thread_id=tid,
+        buyer=buyer,
+        policy=dataclasses.asdict(policy),
+    )
     return {"thread_id": tid, "list_price": n.policy.list_price}
 
 
@@ -173,15 +195,15 @@ async def message(tid: str, body: BuyerTurn):
     )
 
 
-@api.post("/threads/{tid}/override")
-def override(tid: str, action: str):
-    """The seller disagrees with the policy. This is the most valuable
-    event in the system: it is priced, timestamped, and has full context."""
-    n = _thread(tid)
+def _apply_override(n: Negotiation, action: str) -> float:
+    """Apply a seller override to a thread and return the agent price from
+    before it. A pure state transition, shared by the override endpoint and
+    by replay so a rehydrated overridden thread lands where the live one did.
+    Raises ValueError on a bad action; the endpoint maps that to a 400."""
     before = n.agent_price
     if action == "accept_now":
         if not n.offers:
-            raise HTTPException(400, "nothing on the table")
+            raise ValueError("nothing on the table")
         n.status = "closed"
         n.agent_price = n.offers[-1]
     elif action == "hold_firm":
@@ -189,7 +211,19 @@ def override(tid: str, action: str):
     elif action == "concede":
         n.agent_price = max(n.policy.floor, before - 0.30 * (before - n.policy.floor))
     else:
-        raise HTTPException(400, "action must be accept_now, hold_firm, or concede")
+        raise ValueError("action must be accept_now, hold_firm, or concede")
+    return before
+
+
+@api.post("/threads/{tid}/override")
+def override(tid: str, action: str):
+    """The seller disagrees with the policy. This is the most valuable
+    event in the system: it is priced, timestamped, and has full context."""
+    n = _thread(tid)
+    try:
+        before = _apply_override(n, action)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
     store.log(
         "override", thread_id=tid, action=action, round=n.round,
@@ -212,6 +246,47 @@ def thread_state(tid: str):
 @api.get("/export/events")
 def export(kind: str | None = None):
     return store.export_events(kind)
+
+
+# ---------------------------- rehydration ---------------------------- #
+
+def _rebuild(events: list[dict]) -> Negotiation | None:
+    """Reconstruct one thread by replaying its event log.
+
+    The engine is deterministic: given the opening policy and the same
+    sequence of buyer offers and seller overrides, it returns to exactly the
+    state it held before the restart, posterior included. Events are already
+    in chronological order; overrides and turns are replayed interleaved
+    because an override moves the price the next counter builds on.
+    """
+    opened = next((e for e in events if e["kind"] == "thread_opened"), None)
+    if opened is None or "policy" not in opened:
+        # Opened before policy snapshots existed: nothing to replay exactly
+        # against, so skip rather than guess with a possibly-edited policy.
+        return None
+    n = Negotiation(policy=Policy(**opened["policy"]))
+    for e in events:
+        if n.status != "open":
+            break
+        if e["kind"] == "turn":
+            n.step(e.get("buyer_offer"))
+        elif e["kind"] == "override":
+            try:
+                _apply_override(n, e["action"])
+            except ValueError:
+                continue  # a malformed override in the log should not abort replay
+    return n
+
+
+def rehydrate() -> None:
+    """Rebuild every thread into LIVE from the event log. Runs on startup so
+    a process restart does not lose open negotiations. Deterministic replay
+    means a closed thread comes back closed and an open one resumes mid-haggle."""
+    LIVE.clear()
+    for tid in store.thread_ids():
+        n = _rebuild(store.thread_events(tid))
+        if n is not None:
+            LIVE[tid] = n
 
 
 # ------------------------------ webhook ------------------------------ #
