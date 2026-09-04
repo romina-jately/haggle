@@ -4,7 +4,7 @@ Build order item 6 — the table the rest of the project is setup for. It scores
 a model in the seller's negotiating seat against the deterministic engine, on
 the objective from [`NEGOTIATION.md`](NEGOTIATION.md) section 6, using the
 `verifiers` environment in
-[`environments/arina_negotiation`](../environments/arina_negotiation).
+[`environments/haggle_negotiation`](../environments/haggle_negotiation).
 
 ## Setup
 
@@ -70,9 +70,9 @@ and occasionally sold below the line the seller drew.
 ## Reproduce
 
 ```bash
-cd environments/arina_negotiation && uv pip install -e .
+cd environments/haggle_negotiation && uv pip install -e .
 export OPENAI_API_KEY=...   # or point --client.base-url at another provider
-uv run eval arina-negotiation -m gpt-4o-mini -n 32 --no-push \
+uv run eval haggle-negotiation -m gpt-4o-mini -n 32 --no-push \
   --env.agent.runtime.type subprocess \
   --client.base-url https://api.openai.com/v1 --client.api-key-var OPENAI_API_KEY \
   --env.taskset.split eval --env.taskset.num-eval 32

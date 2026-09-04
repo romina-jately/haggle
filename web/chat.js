@@ -1,4 +1,4 @@
-/* Arina buyer chat (build order item 4).
+/* Haggle buyer chat (build order item 4).
  *
  * The buyer side of the same negotiation, over the web instead of WhatsApp.
  * It talks only to /catalog and /buyer/message — endpoints that never carry
@@ -36,13 +36,13 @@ async function api(method, path, body) {
 
 // buyer identity: stable per browser, editable-free for now
 function buyerId() {
-  let id = localStorage.getItem("arina:buyer");
-  if (!id) { id = "web_" + Math.random().toString(36).slice(2, 8); localStorage.setItem("arina:buyer", id); }
+  let id = localStorage.getItem("haggle:buyer");
+  if (!id) { id = "web_" + Math.random().toString(36).slice(2, 8); localStorage.setItem("haggle:buyer", id); }
   return id;
 }
 
 // per-(buyer,listing) transcript
-const chatKey = (lid) => `arina:buyerchat:${buyerId()}:${lid}`;
+const chatKey = (lid) => `haggle:buyerchat:${buyerId()}:${lid}`;
 function loadChat(lid) { return JSON.parse(localStorage.getItem(chatKey(lid)) || '{"messages":[],"status":"open"}'); }
 function saveChat(lid, state) { localStorage.setItem(chatKey(lid), JSON.stringify(state)); }
 

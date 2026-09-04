@@ -13,4 +13,4 @@ jobs:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
       - run: pytest -q
-      - run: ruff check arina
+      - run: ruff check haggle

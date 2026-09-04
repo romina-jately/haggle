@@ -1,4 +1,4 @@
-# Vendored verbatim from the Arina service (api/arina/beliefs.py). Source of truth
+# Vendored verbatim from the Haggle service (api/haggle/beliefs.py). Source of truth
 # lives there; this copy keeps the training environment self-contained and
 # stdlib-only. Re-copy if the engine changes.
 """Belief state over the buyer's reservation price.

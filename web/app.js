@@ -1,4 +1,4 @@
-/* Arina seller dashboard.
+/* Haggle seller dashboard.
  *
  * Nothing here computes a price. The dashboard asks the server for state and
  * draws it. The belief posterior in particular is read straight off
@@ -45,15 +45,15 @@ function toast(msg, bad = false) {
 // ------------------------------ state ------------------------------- //
 
 const store = {
-  get listing() { return JSON.parse(localStorage.getItem("arina:listing") || "null"); },
-  set listing(v) { localStorage.setItem("arina:listing", JSON.stringify(v)); },
-  get threads() { return JSON.parse(localStorage.getItem("arina:threads") || "[]"); },
-  set threads(v) { localStorage.setItem("arina:threads", JSON.stringify(v)); },
-  convo(tid) { return JSON.parse(localStorage.getItem("arina:convo:" + tid) || "[]"); },
+  get listing() { return JSON.parse(localStorage.getItem("haggle:listing") || "null"); },
+  set listing(v) { localStorage.setItem("haggle:listing", JSON.stringify(v)); },
+  get threads() { return JSON.parse(localStorage.getItem("haggle:threads") || "[]"); },
+  set threads(v) { localStorage.setItem("haggle:threads", JSON.stringify(v)); },
+  convo(tid) { return JSON.parse(localStorage.getItem("haggle:convo:" + tid) || "[]"); },
   pushConvo(tid, entry) {
     const c = this.convo(tid);
     c.push(entry);
-    localStorage.setItem("arina:convo:" + tid, JSON.stringify(c));
+    localStorage.setItem("haggle:convo:" + tid, JSON.stringify(c));
   },
 };
 

@@ -1,4 +1,4 @@
-# Working on Arina
+# Working on Haggle
 
 Read `README.md` and `docs/NEGOTIATION.md` first. This file is the build
 order and the list of things not to undo.

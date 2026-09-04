@@ -1,7 +1,7 @@
 import pytest
 
-from arina.bargaining import Negotiation, Policy
-from arina.beliefs import BuyerBelief
+from haggle.bargaining import Negotiation, Policy
+from haggle.beliefs import BuyerBelief
 
 
 def pol(**kw):

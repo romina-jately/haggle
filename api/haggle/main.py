@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Arina", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Haggle", version="0.1.0", lifespan=lifespan)
 api = APIRouter()
 
 # Threads live in memory between requests and are rehydrated from the event

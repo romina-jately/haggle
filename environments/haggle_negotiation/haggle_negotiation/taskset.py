@@ -1,4 +1,4 @@
-"""Arina negotiation environment (build order item 5).
+"""Haggle negotiation environment (build order item 5).
 
 A `verifiers.v1` environment that puts a model in the seller's negotiating
 seat and scores it on the objective from `docs/NEGOTIATION.md` section 6:
@@ -84,7 +84,7 @@ def _text(m) -> str:
     return str(c or "")
 
 
-class ArinaNegotiationTask(vf.Task[NegotiationData, vf.State, NegotiationTaskConfig]):
+class HaggleNegotiationTask(vf.Task[NegotiationData, vf.State, NegotiationTaskConfig]):
     """Scores one negotiation. The reward reconstructs the episode deterministically
     from the agent's own turns in the trace, replayed against the same buyer the
     env drove, so scoring never depends on state smuggled out of the rollout."""
@@ -172,7 +172,7 @@ class ArinaNegotiationTask(vf.Task[NegotiationData, vf.State, NegotiationTaskCon
 
 # ---------------------------- environment ---------------------------- #
 
-class ArinaNegotiationEnvConfig(vf.EnvConfig):
+class HaggleNegotiationEnvConfig(vf.EnvConfig):
     # The negotiator only chats — no shell, no tools — so it defaults to the
     # tool-less `null` harness rather than the `bash` fallback a plain taskset
     # would otherwise get. Override with `--env.agent.harness.id`.
@@ -180,7 +180,7 @@ class ArinaNegotiationEnvConfig(vf.EnvConfig):
     """The one seat: the negotiating policy under evaluation or training."""
 
 
-class ArinaNegotiationEnv(vf.Env[ArinaNegotiationEnvConfig]):
+class HaggleNegotiationEnv(vf.Env[HaggleNegotiationEnvConfig]):
     """Drives a deterministic buyer against the model. The env is the control
     flow; the buyer's moves are computed in Python (no second model), so training
     signal comes only from the negotiator's own turns."""
@@ -207,7 +207,7 @@ class ArinaNegotiationEnv(vf.Env[ArinaNegotiationEnvConfig]):
 
 # ------------------------------ taskset ------------------------------ #
 
-class ArinaNegotiationConfig(vf.TasksetConfig):
+class HaggleNegotiationConfig(vf.TasksetConfig):
     num_train: int = 64
     num_eval: int = 32
     split: str = "all"          # train | eval | all
@@ -218,8 +218,8 @@ class ArinaNegotiationConfig(vf.TasksetConfig):
     task: NegotiationTaskConfig = NegotiationTaskConfig()
 
 
-class ArinaNegotiationTaskset(vf.Taskset[ArinaNegotiationTask, ArinaNegotiationConfig]):
-    def _make(self, idx: int, rng: random.Random, split: str) -> ArinaNegotiationTask:
+class HaggleNegotiationTaskset(vf.Taskset[HaggleNegotiationTask, HaggleNegotiationConfig]):
+    def _make(self, idx: int, rng: random.Random, split: str) -> HaggleNegotiationTask:
         c = self.config
         # Reservation spans from below the floor (unreachable — tests `reachable`)
         # to comfortably above list (an easy close).
@@ -237,11 +237,11 @@ class ArinaNegotiationTaskset(vf.Taskset[ArinaNegotiationTask, ArinaNegotiationC
             patience=rng.randint(5, 10),
             split=split,
         )
-        return ArinaNegotiationTask(data, c.task)
+        return HaggleNegotiationTask(data, c.task)
 
-    def load(self) -> list[ArinaNegotiationTask]:
+    def load(self) -> list[HaggleNegotiationTask]:
         c = self.config
-        tasks: list[ArinaNegotiationTask] = []
+        tasks: list[HaggleNegotiationTask] = []
         if c.split in ("train", "all"):
             rng = random.Random(c.seed)
             tasks += [self._make(i, rng, "train") for i in range(c.num_train)]
@@ -254,4 +254,4 @@ class ArinaNegotiationTaskset(vf.Taskset[ArinaNegotiationTask, ArinaNegotiationC
         return tasks
 
 
-__all__ = ["ArinaNegotiationTaskset", "ArinaNegotiationEnv"]
+__all__ = ["HaggleNegotiationTaskset", "HaggleNegotiationEnv"]

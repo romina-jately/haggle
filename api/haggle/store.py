@@ -17,7 +17,7 @@ import time
 import uuid
 from pathlib import Path
 
-DB = Path(os.environ.get("ARINA_DB", "arina.db"))
+DB = Path(os.environ.get("HAGGLE_DB", "haggle.db"))
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS listings (

@@ -1,8 +1,8 @@
-# arina-negotiation
+# haggle-negotiation
 
 A `verifiers.v1` environment that puts a model in the seller's negotiating seat
-and scores it on the Arina objective. Build order item 5 of the
-[Arina](https://github.com/romina-jately/arina) project; the reward is the one
+and scores it on the Haggle objective. Build order item 5 of the
+[Haggle](https://github.com/romina-jately/haggle) project; the reward is the one
 derived in that repo's `docs/NEGOTIATION.md` section 6.
 
 ## What it measures
@@ -29,7 +29,7 @@ talked out of one.
 ### The engine baseline
 
 Every episode also runs the deterministic `bargaining.py` engine (vendored from
-the Arina service) against the *same* buyer and reports its capture. So each row
+the Haggle service) against the *same* buyer and reports its capture. So each row
 is a head-to-head: the model versus the engine the service actually ships,
 buyer by buyer, on the identical objective. `capture_vs_engine` is the headline
 number — positive means the model beat the engine. This is the raw material of
@@ -58,7 +58,7 @@ the first eval.
 
 Training rows are simulated buyers; the eval rows are a disjoint, held-out
 stream (`--taskset.split train|eval|all`). With a real event log the eval set
-becomes its chronological tail — split by time, not at random (Arina
+becomes its chronological tail — split by time, not at random (Haggle
 `CLAUDE.md`). Buyers are drawn deterministically from `--taskset.seed`, with
 reservation prices spanning from below the floor (unreachable) to above list.
 
@@ -66,8 +66,8 @@ reservation prices spanning from below the floor (unreachable) to above list.
 
 ```bash
 uv pip install -e .
-uv run eval arina-negotiation -m <model> -n 16          # needs PRIME_API_KEY / prime login
-uv run eval arina-negotiation -m <model> --taskset.split eval --no-push
+uv run eval haggle-negotiation -m <model> -n 16          # needs PRIME_API_KEY / prime login
+uv run eval haggle-negotiation -m <model> --taskset.split eval --no-push
 ```
 
 Knobs: `--taskset.num-train`, `--taskset.num-eval`, `--taskset.seed`,
@@ -84,14 +84,14 @@ the unreachable-buyer case:
 ```bash
 uv run python - <<'PY'
 import asyncio
-from arina_negotiation.taskset import ArinaNegotiationTask, NegotiationData, NegotiationTaskConfig
+from haggle_negotiation.taskset import HaggleNegotiationTask, NegotiationData, NegotiationTaskConfig
 class M:
     def __init__(s,t): s.content=t
 class T:
     assistant_messages=[M('{"action":"counter","price":230}'),
                         M('{"action":"accept","price":195}')]
     last_reply='x'
-t = ArinaNegotiationTask(NegotiationData(idx=0, reservation=205, list_price=240, floor=160), NegotiationTaskConfig())
+t = HaggleNegotiationTask(NegotiationData(idx=0, reservation=205, list_price=240, floor=160), NegotiationTaskConfig())
 print("reward",        asyncio.run(t.objective(T())))
 print("capture",       asyncio.run(t.capture(T())))
 print("engine_capture",asyncio.run(t.engine_capture(T())))
@@ -102,10 +102,10 @@ PY
 ## Files
 
 ```
-arina_negotiation/
+haggle_negotiation/
   taskset.py    the Env (drives the buyer), the Task (reward + metrics), the Taskset
   buyer.py      deterministic counterpart, agent-move parsing, episode replay
   baseline.py   runs the engine against the same buyer
-  bargaining.py \ vendored verbatim from the Arina service, stdlib-only
-  beliefs.py    /  (source of truth is api/arina/ in the Arina repo)
+  bargaining.py \ vendored verbatim from the Haggle service, stdlib-only
+  beliefs.py    /  (source of truth is api/haggle/ in the Haggle repo)
 ```

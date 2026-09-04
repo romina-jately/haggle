@@ -1,9 +1,9 @@
-# Arina
+# Haggle
 
 An agentic marketplace for people who sell things one at a time.
 
 Listing takes three minutes. Answering the next forty messages takes three
-weeks. Arina does the second part.
+weeks. Haggle does the second part.
 
 Two flows:
 
@@ -35,12 +35,12 @@ Full derivation in [`docs/NEGOTIATION.md`](docs/NEGOTIATION.md).
 ## Run it yourself
 
 ```bash
-git clone https://github.com/romina-jately/arina
-cd arina/api
+git clone https://github.com/romina-jately/haggle
+cd haggle/api
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 pytest                          # 23 tests, no network, no keys needed
-uvicorn arina.main:app
+uvicorn haggle.main:app
 ```
 
 Then open **http://localhost:8000/** — a landing page linking the **seller
@@ -58,7 +58,7 @@ anyone else's:
 
 - **Fluent phrasing** (optional): `cp .env.example .env` and set your own
   `ANTHROPIC_API_KEY`. Language only — the model never sees a price or a floor.
-- **The results eval** ([`environments/arina_negotiation`](environments/arina_negotiation)):
+- **The results eval** ([`environments/haggle_negotiation`](environments/haggle_negotiation)):
   set your own `OPENAI_API_KEY`, or point `--client.base-url` at any provider.
   See [`docs/RESULTS.md`](docs/RESULTS.md).
 
@@ -69,7 +69,7 @@ key at all.
 Watch the three postures diverge against the same buyer:
 
 ```python
-from arina.bargaining import Negotiation, Policy
+from haggle.bargaining import Negotiation, Policy
 
 for style in ("firm", "balanced", "eager"):
     n = Negotiation(policy=Policy(list_price=240, floor=160, style=style))
@@ -131,7 +131,7 @@ signature verification, and inbound parsing. Setup steps are in
 
 ```
 api/
-  arina/
+  haggle/
     bargaining.py   the engine: tactics, invariants, acceptance rule
     beliefs.py      grid posterior over the buyer's reservation price
     llm.py          the only place a model is called. language only.
@@ -165,7 +165,7 @@ the web, so the whole flow is testable without a business account — the buyer
 transport never carries the floor or belief state.
 
 The training environment is built: a `verifiers` environment
-([`environments/arina_negotiation`](environments/arina_negotiation)) that puts a
+([`environments/haggle_negotiation`](environments/haggle_negotiation)) that puts a
 model in the negotiating seat against a deterministic buyer, scores it on the
 section-6 objective, and reports the engine's capture on the same buyer as a
 baseline.

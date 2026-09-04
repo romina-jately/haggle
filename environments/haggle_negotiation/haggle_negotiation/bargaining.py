@@ -1,4 +1,4 @@
-# Vendored verbatim from the Arina service (api/arina/bargaining.py). Source of truth
+# Vendored verbatim from the Haggle service (api/haggle/bargaining.py). Source of truth
 # lives there; this copy keeps the training environment self-contained and
 # stdlib-only. Re-copy if the engine changes.
 """The negotiation engine.
