@@ -108,20 +108,51 @@ def _offline_blurb(name: str, description: str) -> dict:
             "tags": [], "blurb": blurb}
 
 
-def _offline_message(action: str, number: float | None, first: bool) -> str:
+def _last_price(history: list[str] | None) -> float | None:
+    """The agent's most recent quoted number, parsed from the turn history
+    (entries look like ``counter:239.8``)."""
+    for entry in reversed(history or []):
+        _, _, price = entry.partition(":")
+        try:
+            return float(price)
+        except ValueError:
+            continue
+    return None
+
+
+def _offline_message(action: str, number: float | None, first: bool,
+                     history: list[str] | None = None) -> str:
     amount = "" if number is None else f"${round(number)}"
-    lead = ("Quick note: I'm the seller's agent handling messages for this item. "
-            if first else "")
-    if action == "counter":
-        return f"{lead}I can do {amount} — it's in good shape and fairly priced. Work for you?"
-    if action == "accept":
-        return f"{lead}Deal at {amount}. I'll follow up with the next steps to close it out."
+    lead = "Quick note: I'm the seller's agent for this item. " if first else ""
+
     if action == "answer":
-        return f"{lead}Happy to help with that. What would you like to offer?"
+        return f"{lead}Happy to help — what price were you thinking?"
+    if action == "accept":
+        return f"{lead}Deal at {amount} — I'll follow up with the next steps to close it out."
     if action == "walk":
-        return (f"{lead}I don't think we'll land on a number today, but the door's open "
-                "if you'd like to revisit.")
-    return f"{lead}{amount}".strip()
+        return (f"{lead}I don't think we'll get there today, but the door's open if you'd "
+                "like to revisit.")
+
+    # counter: vary the line, and say plainly whether we moved or are holding —
+    # a repeated number should read as "come up a bit", not as a fresh offer.
+    if first:
+        return f"{lead}Thanks for reaching out! I can do {amount} on this — it's in good shape."
+    prev = _last_price(history)
+    moved_down = prev is not None and number is not None and round(number) < round(prev)
+    turn = sum(1 for h in (history or []) if h.startswith("counter"))
+    if moved_down:
+        opts = [
+            f"Okay, I can come down to {amount}. Closer?",
+            f"I'll meet you partway — {amount}. How's that?",
+            f"Let's try {amount}. Does that work for you?",
+        ]
+    else:
+        opts = [
+            f"I'm holding at {amount} for now — that's fair for the condition. Can you come up a bit?",
+            f"Best I can do right now is {amount}. Come up a little and we'll get there.",
+            f"Still at {amount} on my end. Where are you hoping to land?",
+        ]
+    return lead + opts[turn % len(opts)]
 
 
 async def read_listing(name: str, description: str) -> dict:
@@ -133,7 +164,7 @@ async def read_listing(name: str, description: str) -> dict:
 async def write_message(*, item: str, history: list[str], buyer_message: str,
                         action: str, number: float | None, first: bool) -> str:
     if not _has_key():
-        return _offline_message(action, number, first)
+        return _offline_message(action, number, first, history)
     out = await _call(
         WRITE_SYS,
         {
