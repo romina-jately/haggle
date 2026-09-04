@@ -130,10 +130,15 @@ web/                seller dashboard and buyer chat
 
 ## Status
 
-The engine and the service are real and tested. The WhatsApp path is
-implemented but needs a verified business account to run end to end. The
-web app is scaffolded.
+The engine and the service are real and tested. Live threads persist across
+restarts by replaying the event log, the seller dashboard is built (listing
+intake, the policy panel, live threads, and the belief posterior as a
+chart), and inbound WhatsApp routing is implemented — see
+[`docs/ROUTING.md`](docs/ROUTING.md) for the product decision behind it. The
+WhatsApp *send* path still needs a verified business account to run end to
+end; a dev inbound endpoint exercises routing without one, and with no
+`ANTHROPIC_API_KEY` the language paths fall back to templates so the whole
+thing runs offline.
 
-Not yet built, in order: persisting live threads across restarts, mapping
-inbound WhatsApp numbers to threads, and the training environment that
+Not yet built, in order: buyer-side chat, and the training environment that
 consumes `/export/events`. See `CLAUDE.md`.

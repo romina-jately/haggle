@@ -19,6 +19,7 @@ import dataclasses
 import json
 import os
 import re
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -80,7 +81,7 @@ async def create_listing(body: ListingIn):
     with store.conn() as c:
         c.execute(
             "INSERT INTO listings(id, retail_id, seller, payload, created) VALUES (?,?,?,?,?)",
-            (lid, lid, "me", out.model_dump_json(), __import__("time").time()),
+            (lid, lid, "me", out.model_dump_json(), time.time()),
         )
     store.log("listing_created", listing_id=lid, inferred=fields)
     return out
@@ -113,7 +114,7 @@ def set_policy(listing_id: str, body: PolicyIn):
         c.execute(
             "INSERT INTO policies(listing_id, payload, updated) VALUES (?,?,?) "
             "ON CONFLICT(listing_id) DO UPDATE SET payload=excluded.payload, updated=excluded.updated",
-            (listing_id, body.model_dump_json(), __import__("time").time()),
+            (listing_id, body.model_dump_json(), time.time()),
         )
     store.log("policy_set", listing_id=listing_id, style=body.style)
     return {"ok": True}
@@ -129,28 +130,34 @@ def _policy_for(listing_id: str) -> Policy:
 
 # ----------------------------- negotiation --------------------------- #
 
-@api.post("/threads")
-def open_thread(listing_id: str, buyer: str):
-    policy = _policy_for(listing_id)
+def _set_thread_status(tid: str, status: str) -> None:
+    with store.conn() as c:
+        c.execute("UPDATE threads SET status = ?, updated = ? WHERE id = ?",
+                  (status, time.time(), tid))
+
+
+def _open_thread(listing_id: str, buyer: str, policy: Policy) -> str:
+    """Create a thread and snapshot its policy into the event log. Shared by
+    the /threads endpoint and by inbound WhatsApp routing (docs/ROUTING.md)."""
     n = Negotiation(policy=policy)
     tid = store.new_id("thr")
     LIVE[tid] = n
     with store.conn() as c:
         c.execute(
             "INSERT INTO threads(id, listing_id, buyer, state, status, updated) VALUES (?,?,?,?,?,?)",
-            (tid, listing_id, buyer, "{}", "open", __import__("time").time()),
+            (tid, listing_id, buyer, "{}", "open", time.time()),
         )
-    # Snapshot the policy into the event log. A thread negotiates under the
-    # policy in force when it opened; a later edit to the listing's policy
-    # must not change how an in-flight thread replays on restart.
-    store.log(
-        "thread_opened",
-        listing_id=listing_id,
-        thread_id=tid,
-        buyer=buyer,
-        policy=dataclasses.asdict(policy),
-    )
-    return {"thread_id": tid, "list_price": n.policy.list_price}
+    # A thread negotiates under the policy in force when it opened; a later
+    # edit to the listing's policy must not change how it replays on restart.
+    store.log("thread_opened", listing_id=listing_id, thread_id=tid, buyer=buyer,
+              policy=dataclasses.asdict(policy))
+    return tid
+
+
+@api.post("/threads")
+def open_thread(listing_id: str, buyer: str):
+    tid = _open_thread(listing_id, buyer, _policy_for(listing_id))
+    return {"thread_id": tid, "list_price": LIVE[tid].policy.list_price}
 
 
 def _thread(tid: str) -> Negotiation:
@@ -160,20 +167,23 @@ def _thread(tid: str) -> Negotiation:
     return n
 
 
-@api.post("/threads/{tid}/message", response_model=AgentTurn)
-async def message(tid: str, body: BuyerTurn):
+async def _advance(tid: str, buyer_text: str) -> AgentTurn:
+    """One negotiation round: parse an offer, step the engine, ask the model
+    for a sentence, log the turn. The engine decides; the model only phrases.
+    Shared by the message endpoint and by inbound WhatsApp routing so both
+    transports drive the exact same logic."""
     n = _thread(tid)
     if n.status != "open":
         raise HTTPException(409, f"thread is {n.status}")
 
-    offer = read_offer(body.text)
+    offer = read_offer(buyer_text)
     turn = n.step(offer)
 
     history = [f"{e.action}:{e.agent_price}" for e in n.turns[-6:]]
     text = await llm.write_message(
         item=f"listed at ${n.policy.list_price:.0f}",
         history=history,
-        buyer_message=body.text,
+        buyer_message=buyer_text,
         action=turn.action,
         number=None if turn.action == "answer" else turn.agent_price,
         first=len(n.turns) == 1,
@@ -185,8 +195,10 @@ async def message(tid: str, body: BuyerTurn):
     )
     if n.status == "closed":
         store.log("close", thread_id=tid, price=n.agent_price, capture=n.capture, rounds=n.round)
+        _set_thread_status(tid, "closed")
     if n.status == "walked":
         store.log("walk", thread_id=tid, last_offer=offer, rounds=n.round)
+        _set_thread_status(tid, "walked")
 
     return AgentTurn(
         text=text,
@@ -196,6 +208,11 @@ async def message(tid: str, body: BuyerTurn):
         action=turn.action,
         seller_view={"rationale": turn.rationale, "belief": turn.belief},
     )
+
+
+@api.post("/threads/{tid}/message", response_model=AgentTurn)
+async def message(tid: str, body: BuyerTurn):
+    return await _advance(tid, body.text)
 
 
 def _apply_override(n: Negotiation, action: str) -> float:
@@ -233,6 +250,8 @@ def override(tid: str, action: str):
         agent_wanted=before, seller_set=n.agent_price,
         delta=n.agent_price - before, belief=n.belief.summary(),
     )
+    if n.status != "open":
+        _set_thread_status(tid, n.status)
     return {"ok": True, "agent_price": n.agent_price, "status": n.status}
 
 
@@ -280,7 +299,20 @@ def export(kind: str | None = None):
 def health():
     """Cheap liveness plus one bit the dashboard wants: whether the language
     paths have a key or are running the offline templates."""
-    return {"ok": True, "offline": not llm._has_key(), "live_threads": len(LIVE)}
+    return {"ok": True, "offline": not llm._has_key(), "live_threads": len(LIVE),
+            "dev_inbound": not os.environ.get("META_APP_SECRET")}
+
+
+_INBOX_KINDS = {"inbound", "inbound_routed", "inbound_ambiguous", "inbound_unrouted",
+                "outbound", "outbound_skipped", "order"}
+
+
+@api.get("/inbox")
+def inbox(limit: int = 40):
+    """Recent WhatsApp activity for the dashboard: how each inbound message
+    was routed, newest first. Read straight off the event log."""
+    evs = [e for e in store.export_events() if e["kind"] in _INBOX_KINDS]
+    return list(reversed(evs[-limit:]))
 
 
 # ---------------------------- rehydration ---------------------------- #
@@ -334,17 +366,121 @@ def verify(request: Request):
     raise HTTPException(403, "bad verify token")
 
 
+# --------------------------- inbound routing ------------------------- #
+# The product decision behind all of this is written up in docs/ROUTING.md.
+# A thread is keyed by (buyer, listing). Every message must resolve to a
+# listing before it can move a price, and we never guess when it can't.
+
+def _policy_or_none(listing_id: str) -> Policy | None:
+    with store.conn() as c:
+        row = c.execute("SELECT payload FROM policies WHERE listing_id = ?", (listing_id,)).fetchone()
+    return Policy(**json.loads(row["payload"])) if row else None
+
+
+def _buyer_threads(buyer: str) -> list[dict]:
+    """Every thread for a buyer, newest first, with live status. Status comes
+    from LIVE (accurate after rehydrate), not the threads row, which is only a
+    convenience mirror."""
+    with store.conn() as c:
+        rows = c.execute(
+            "SELECT id, listing_id FROM threads WHERE buyer = ? ORDER BY updated DESC", (buyer,)
+        ).fetchall()
+    return [
+        {"tid": r["id"], "listing_id": r["listing_id"],
+         "status": LIVE[r["id"]].status if r["id"] in LIVE else "unknown"}
+        for r in rows
+    ]
+
+
+def _open_threads(buyer: str) -> list[dict]:
+    return [t for t in _buyer_threads(buyer) if t["status"] == "open"]
+
+
+def _thread_for_listing(buyer: str, listing_id: str) -> str | None:
+    """The buyer's open thread on this listing, opening one if needed. Returns
+    None only when the listing has no policy, so there is nothing to negotiate."""
+    for t in _open_threads(buyer):
+        if t["listing_id"] == listing_id:
+            return t["tid"]
+    policy = _policy_or_none(listing_id)
+    if policy is None:
+        return None
+    return _open_thread(listing_id, buyer, policy)
+
+
+async def _reply(buyer: str, text: str) -> None:
+    """Best-effort outbound. Only the buyer-facing sentence goes out, never
+    the seller view. Without Meta credentials (dev) this is a no-op that logs
+    the intent rather than crashing the webhook."""
+    try:
+        await whatsapp.send_text(buyer, text)
+        store.log("outbound", buyer=buyer, text=text)
+    except Exception as e:  # noqa: BLE001 - transport is best-effort here
+        store.log("outbound_skipped", buyer=buyer, text=text, error=str(e)[:200])
+
+
+async def route_inbound(msg: dict) -> dict:
+    """Resolve one inbound message to a thread and advance it, or record why
+    it could not be routed. Never raises: every branch ends in a logged event
+    so /export/events reconstructs how each message was handled. Returns a
+    small outcome dict for callers that want it (the dev endpoint)."""
+    buyer = msg.get("from")
+    if not buyer:
+        return {"outcome": "ignored"}
+    text = msg.get("text", "") or ""
+    listing_id = msg.get("product_retailer_id")
+
+    if listing_id:
+        tid = _thread_for_listing(buyer, listing_id)
+        if tid is None:
+            store.log("inbound_unrouted", buyer=buyer, wa_id=msg.get("wa_id"),
+                      listing_id=listing_id, reason="listing has no policy")
+            return {"outcome": "unrouted", "reason": "listing has no policy"}
+    else:
+        opens = _open_threads(buyer)
+        if len(opens) == 1:
+            tid = opens[0]["tid"]
+        elif not opens:
+            store.log("inbound_unrouted", buyer=buyer, wa_id=msg.get("wa_id"),
+                      reason="no product context and no open thread")
+            return {"outcome": "unrouted", "reason": "no product context and no open thread"}
+        else:
+            store.log("inbound_ambiguous", buyer=buyer, wa_id=msg.get("wa_id"),
+                      open_threads=[t["tid"] for t in opens],
+                      listings=[t["listing_id"] for t in opens])
+            await _reply(buyer, "You've got a few items going with me — which one is "
+                                "this about? Tap the product and send again and I'll pick "
+                                "up right there.")
+            return {"outcome": "ambiguous", "open_threads": [t["tid"] for t in opens]}
+
+    turn = await _advance(tid, text)
+    store.log("inbound_routed", buyer=buyer, wa_id=msg.get("wa_id"),
+              thread_id=tid, listing_id=listing_id, action=turn.action)
+    await _reply(buyer, turn.text)
+    return {"outcome": "routed", "thread_id": tid, "action": turn.action}
+
+
 @app.post("/webhooks/whatsapp")
 async def inbound(request: Request):
     raw = await request.body()
     if not whatsapp.verify_signature(raw, request.headers.get("x-hub-signature-256")):
         raise HTTPException(401, "bad signature")
     for m in whatsapp.parse_inbound(json.loads(raw)):
-        store.log("inbound", **m)
-        # Route to the right thread and call message() from here. Left as a
-        # deliberate seam: buyer-to-thread mapping is a product decision, not
-        # a transport one. See CLAUDE.md, build order item 3.
+        store.log("inbound", buyer=m.get("from"), wa_id=m.get("wa_id"),
+                  msg_type=m.get("type"), product_retailer_id=m.get("product_retailer_id"),
+                  text=m.get("text", ""))
+        await route_inbound(m)
     return {"received": True}
+
+
+# In development (no Meta app secret to verify a real webhook signature),
+# expose a signature-free way to inject an inbound message so the routing
+# above can be exercised end to end from the dashboard. Never mounted when a
+# secret is configured.
+if not os.environ.get("META_APP_SECRET"):
+    @app.post("/dev/inbound")
+    async def dev_inbound(msg: dict):
+        return await route_inbound(msg)
 
 
 app.include_router(api)

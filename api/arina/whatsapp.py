@@ -147,7 +147,13 @@ def verify_signature(raw_body: bytes, header: str | None) -> bool:
 
 
 def parse_inbound(payload: dict) -> list[dict]:
-    """Flatten Meta's nested webhook into the few things we care about."""
+    """Flatten Meta's nested webhook into the few things we care about.
+
+    The one field that makes routing possible is the product context: when a
+    buyer messages from a product or catalog card, Meta stamps the inbound with
+    the item it came from. We surface it as `product_retailer_id` (our listing
+    id) so `main.py` can route without guessing. See docs/ROUTING.md.
+    """
     out: list[dict] = []
     for entry in payload.get("entry", []):
         for change in entry.get("changes", []):
@@ -155,6 +161,11 @@ def parse_inbound(payload: dict) -> list[dict]:
             for m in value.get("messages", []):
                 kind = m.get("type")
                 item = {"from": m.get("from"), "wa_id": m.get("id"), "type": kind}
+                # A message sent from a product/catalog card carries the item
+                # it references. This is the listing pin.
+                referred = m.get("context", {}).get("referred_product", {})
+                if referred.get("product_retailer_id"):
+                    item["product_retailer_id"] = referred["product_retailer_id"]
                 if kind == "text":
                     item["text"] = m.get("text", {}).get("body", "")
                 elif kind == "order":
@@ -162,6 +173,9 @@ def parse_inbound(payload: dict) -> list[dict]:
                     item["catalog_id"] = order.get("catalog_id")
                     item["items"] = order.get("product_items", [])
                     item["text"] = order.get("text", "")
+                    # A single-item cart pins the listing the same way.
+                    if len(item["items"]) == 1:
+                        item["product_retailer_id"] = item["items"][0].get("product_retailer_id")
                 elif kind == "interactive":
                     item["text"] = str(m.get("interactive", {}))
                 out.append(item)

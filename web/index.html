@@ -134,6 +134,23 @@
           <span><i style="background:#e3b341"></i>buyer offers</span>
         </div>
       </div>
+
+      <div class="card">
+        <h2 class="spread"><span>WhatsApp activity</span><button id="wa-refresh" class="ghost small">Refresh</button></h2>
+        <div class="devbox" id="wa-sim" hidden>
+          <div class="lbl">Dev — simulate an inbound message (no WABA needed)</div>
+          <div class="composer" style="margin-top:0">
+            <input id="wa-from" placeholder="buyer phone, e.g. 15551234" />
+            <input id="wa-product" placeholder="product / listing id — leave blank for bare text" />
+          </div>
+          <div class="composer">
+            <input id="wa-text" placeholder="buyer message, e.g. would you take 180?" />
+            <button id="wa-send">Send inbound</button>
+          </div>
+          <div class="small muted" style="margin-top:8px">Set a product id to pin the listing; leave it blank to test routing to the buyer's open thread — or ambiguity when they have several.</div>
+        </div>
+        <div class="feed" id="wa-feed"><div class="empty">No inbound messages yet.</div></div>
+      </div>
     </section>
   </main>
 

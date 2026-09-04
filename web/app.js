@@ -399,6 +399,84 @@ function drawRounds(s) {
     `<text x="${(padL + W) / 2}" y="${H - 2}" fill="#6b7885" font-size="9" text-anchor="middle">round</text>`);
 }
 
+// -------------------------- whatsapp feed --------------------------- //
+
+const KIND = {
+  inbound: ["inbound", "in"],
+  inbound_routed: ["routed", "routed"],
+  inbound_ambiguous: ["ambiguous", "ambiguous"],
+  inbound_unrouted: ["unrouted", "unrouted"],
+  outbound: ["outbound", "out"],
+  outbound_skipped: ["outbound", "out·skip"],
+  order: ["order", "order"],
+};
+
+function feedBody(e) {
+  const id = (s) => `<span class="id">${(s || "").slice(0, 10)}</span>`;
+  switch (e.kind) {
+    case "inbound":
+      return `<b>${escapeHtml(e.buyer)}</b> ${e.product_retailer_id ? `· pinned ${id(e.product_retailer_id)} ` : ""}“${escapeHtml((e.text || "").slice(0, 60))}”`;
+    case "inbound_routed":
+      return `→ ${escapeHtml(e.buyer)} routed to ${id(e.thread_id)} · ${e.action}`;
+    case "inbound_ambiguous":
+      return `${escapeHtml(e.buyer)} has ${(e.open_threads || []).length} open threads — asked which item`;
+    case "inbound_unrouted":
+      return `${escapeHtml(e.buyer)} not routed — ${escapeHtml(e.reason || "")}`;
+    case "outbound":
+      return `↩ ${escapeHtml(e.buyer)} “${escapeHtml((e.text || "").slice(0, 60))}”`;
+    case "outbound_skipped":
+      return `↩ ${escapeHtml(e.buyer)} — no WABA, reply not sent`;
+    case "order":
+      return `cart from ${escapeHtml(e.buyer)}`;
+    default:
+      return e.kind;
+  }
+}
+
+function hhmmss(ts) {
+  try { return new Date(ts * 1000).toLocaleTimeString([], { hour12: false }); }
+  catch { return ""; }
+}
+
+async function loadInbox() {
+  let evs;
+  try { evs = await api("GET", "/inbox"); } catch { return; }
+  const box = $("#wa-feed");
+  if (!evs.length) { box.innerHTML = `<div class="empty">No inbound messages yet.</div>`; return; }
+  box.innerHTML = evs.map((e) => {
+    const [cls, label] = KIND[e.kind] || ["inbound", e.kind];
+    return `<div class="ev"><span class="k ${cls}">${label}</span><span class="body">${feedBody(e)}</span><time>${hhmmss(e.ts)}</time></div>`;
+  }).join("");
+}
+
+$("#wa-refresh").addEventListener("click", loadInbox);
+
+$("#wa-send").addEventListener("click", async () => {
+  const from = $("#wa-from").value.trim();
+  if (!from) return toast("Enter a buyer phone.", true);
+  const msg = { from, text: $("#wa-text").value.trim() };
+  const product = $("#wa-product").value.trim();
+  if (product) msg.product_retailer_id = product;
+  msg.wa_id = "sim_" + Math.random().toString(36).slice(2, 8);
+  try {
+    const r = await api("POST", "/dev/inbound", { body: msg });
+    $("#wa-text").value = "";
+    // an auto-created thread won't be in our local list; adopt it
+    if (r.outcome === "routed" && r.thread_id && !store.threads.some((t) => t.id === r.thread_id)) {
+      const threads = store.threads;
+      threads.unshift({ id: r.thread_id, buyer: from });
+      store.threads = threads;
+      renderThreadList();
+    }
+    toast(`Inbound ${r.outcome}${r.action ? " · " + r.action : ""}.`);
+    loadInbox();
+    if (r.thread_id) selectThread(r.thread_id);
+    else if (current) loadThread(current);
+  } catch (e) {
+    toast("Inbound failed: " + e.message, true);
+  }
+});
+
 // ------------------------------- init ------------------------------- //
 
 async function init() {
@@ -407,11 +485,13 @@ async function init() {
     $("#mode").innerHTML = h.offline
       ? `mode: <b>offline</b> — templated replies`
       : `mode: <b>live model</b>`;
+    if (h.dev_inbound) $("#wa-sim").hidden = false;
   } catch {
     $("#mode").textContent = "API unreachable";
   }
   if (store.listing) { revealListingUI(); $("#l-result").innerHTML = `Active listing <span class="pill">${store.listing.id}</span>`; $("#p-list").value = Math.round(store.listing.price) || 240; }
   renderThreadList();
+  loadInbox();
   if (store.threads[0]) selectThread(store.threads[0].id);
 }
 init();
