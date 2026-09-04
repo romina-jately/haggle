@@ -240,6 +240,101 @@ svg text { font-family: var(--mono); }
 .k.inbound { color: var(--purple); }
 .k.outbound, .k.order { color: var(--ink-dim); }
 
+/* ============================ landing ============================ */
+.landing { max-width: 960px; margin: 0 auto; padding: 20px 24px 70px; }
+
+.hero { position: relative; text-align: center; padding: 54px 10px 46px; }
+.doodle { position: absolute; z-index: 0; }
+.doodle.d1 { width: 34px; top: 30px; left: 6%; transform: rotate(-12deg); }
+.doodle.d2 { width: 40px; top: 90px; right: 8%; transform: rotate(9deg); }
+.doodle.d3 { width: 66px; bottom: 120px; left: 3%; transform: rotate(-6deg); }
+.doodle.d4 { width: 46px; top: 20px; right: 20%; transform: rotate(8deg); }
+.doodle.d5 { width: 40px; bottom: 90px; right: 5%; transform: rotate(-10deg); }
+.hero > *:not(.doodle) { position: relative; z-index: 1; }
+
+.hero-eyebrow {
+  display: inline-block; font-size: 12px; text-transform: uppercase; letter-spacing: .12em;
+  background: var(--pink); border: 2px solid var(--ink); padding: 4px 12px; margin: 0 0 22px;
+  transform: rotate(-1.5deg); box-shadow: var(--shadow-sm);
+}
+.hero-word {
+  font-family: var(--disp); font-weight: 700; font-size: clamp(3.2rem, 11vw, 6.5rem);
+  line-height: .95; letter-spacing: -.04em; margin: 0 0 22px; text-wrap: balance;
+}
+.hero-lede { font-size: 1.02rem; line-height: 1.6; max-width: 56ch; margin: 0 auto 30px; color: var(--ink-dim); }
+.hero-lede b { color: var(--ink); font-weight: 700; }
+.hero-cta { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+.bigbtn {
+  display: inline-block; font-family: var(--disp); font-weight: 700; font-size: 1.05rem;
+  text-decoration: none; color: var(--ink); padding: 14px 26px; border: 2px solid var(--ink);
+  box-shadow: var(--shadow); transition: transform .08s, box-shadow .08s;
+}
+.bigbtn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+.bigbtn:active { transform: translate(2px, 2px); box-shadow: none; }
+.bigbtn.sell { background: var(--yellow); }
+.bigbtn.shop { background: var(--pink); }
+
+.sec-h { font-family: var(--disp); font-size: 1.5rem; font-weight: 700; margin: 0 0 22px; text-align: center; }
+.sec-h::after { content: ""; display: block; width: 54px; height: 3px; background: var(--ink); margin: 10px auto 0; }
+
+section.rulebox, section.how, section.doors, section.receipt { margin-top: 58px; }
+
+.rulebox {
+  background: var(--yellow); border: 2px solid var(--ink); box-shadow: var(--shadow);
+  padding: 34px 34px 30px; position: relative; transform: rotate(-.6deg);
+}
+.stamp {
+  position: absolute; top: -14px; left: 24px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em;
+  font-weight: 700; background: var(--ink); color: var(--paper); padding: 4px 11px; transform: rotate(-2deg);
+}
+.stamp.pink { background: var(--pink); color: var(--ink); }
+.rule-line { font-family: var(--disp); font-weight: 700; font-size: clamp(1.3rem, 3.2vw, 1.9rem); line-height: 1.3; margin: 6px 0 16px; text-wrap: balance; }
+.rule-line .under { background: linear-gradient(transparent 60%, var(--paper) 60%); padding: 0 2px; }
+.rule-gloss { margin: 0; font-size: .95rem; color: var(--ink); max-width: 66ch; }
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.step { background: var(--paper); border: 2px solid var(--ink); box-shadow: var(--shadow); padding: 22px 20px; }
+.step:nth-child(2) { transform: rotate(.8deg); }
+.step:nth-child(1) { transform: rotate(-.6deg); }
+.step-n { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 2px solid var(--ink); font-family: var(--disp); font-weight: 700; background: var(--peach); margin-bottom: 12px; }
+.step:nth-child(2) .step-n { background: var(--green); }
+.step:nth-child(3) .step-n { background: var(--purple); }
+.step h3 { font-family: var(--disp); font-size: 1.1rem; margin: 0 0 6px; }
+.step p { margin: 0; font-size: .9rem; color: var(--ink-dim); }
+.step em { font-style: normal; font-weight: 700; color: var(--ink); }
+
+.door-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.door {
+  display: block; text-decoration: none; color: var(--ink); border: 2px solid var(--ink);
+  box-shadow: var(--shadow); padding: 26px 24px; transition: transform .1s, box-shadow .1s;
+}
+.door:hover { transform: translate(-3px, -3px) rotate(-.6deg); box-shadow: 8px 8px 0 var(--ink); }
+.door.sell { background: var(--yellow); }
+.door.shop { background: var(--pink); }
+.door-tag { display: inline-block; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; border: 2px solid var(--ink); background: var(--paper); padding: 3px 9px; margin-bottom: 14px; }
+.door h3 { font-family: var(--disp); font-size: 1.55rem; margin: 0 0 8px; }
+.door p { margin: 0 0 16px; font-size: .92rem; }
+.door-go { font-family: var(--disp); font-weight: 700; }
+
+.receipt { background: var(--paper); border: 2px solid var(--ink); box-shadow: var(--shadow); padding: 32px 30px 28px; position: relative; transform: rotate(.5deg); }
+.receipt-line { margin: 6px 0 14px; font-size: 1rem; line-height: 1.6; max-width: 68ch; }
+.receipt-line .hl { background: var(--yellow); padding: 0 4px; border: 1px solid var(--ink); }
+.receipt-line .mono { font-weight: 700; }
+.receipt-line b { font-weight: 700; }
+.receipt-link { font-family: var(--disp); font-weight: 700; text-decoration: none; color: var(--ink); border-bottom: 3px solid var(--pink); }
+.receipt-link:hover { background: var(--pink); }
+
+.land-foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: center; margin-top: 60px; padding-top: 22px; border-top: 2px solid var(--ink); font-size: 12px; color: var(--ink-dim); }
+.land-foot a { color: var(--ink); text-decoration: none; border-bottom: 2px solid var(--yellow); }
+.land-foot a:hover { background: var(--yellow); }
+
+@media (max-width: 720px) {
+  .steps { grid-template-columns: 1fr; }
+  .door-grid { grid-template-columns: 1fr; }
+  .doodle.d3, .doodle.d5 { display: none; }
+}
+
 /* ------------------------- buyer shop ---------------------------- */
 .shop { max-width: 1040px; margin: 0 auto; padding: 30px 24px; }
 .shop-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 22px; }

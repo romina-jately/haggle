@@ -3,160 +3,98 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Arina — seller dashboard</title>
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <title>Arina — haggle, handled</title>
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
-  <div class="ticker">✦ list it once, let the agent haggle · your floor never leaves the server ✦</div>
+  <div class="ticker">✦ list it once · the agent haggles every buyer · your floor never leaves the server ✦</div>
+
   <header>
-    <h1>Arina</h1>
-    <span class="tag">seller dashboard</span>
-    <span class="mode" id="mode">connecting…</span>
-    <a class="mode" href="chat.html" target="_blank" style="margin-left:10px;text-decoration:none">buyer view ↗</a>
+    <a href="index.html" style="text-decoration:none;color:inherit"><h1>Arina</h1></a>
+    <span class="tag">an agentic marketplace</span>
+    <a class="mode" href="https://github.com/romina-jately/arina" target="_blank" style="margin-left:auto;text-decoration:none">source ↗</a>
   </header>
 
-  <main>
-    <!-- ------------------------- left column ------------------------- -->
-    <section class="left">
-      <div class="card">
-        <h2>New listing <span class="hint">— notes in, structured listing out</span></h2>
-        <label>Name</label>
-        <input id="l-name" placeholder="Vintage Levi's denim jacket" />
-        <label>Description / notes</label>
-        <textarea id="l-desc" placeholder="70s orange tab, small, a bit faded, no rips"></textarea>
-        <div class="row">
-          <div>
-            <label>Price (USD)</label>
-            <input id="l-price" class="num" type="number" value="240" />
-          </div>
-          <div>
-            <label>Image URL</label>
-            <input id="l-img" placeholder="https://…" />
-          </div>
-        </div>
-        <img class="preview" id="l-preview" alt="" hidden />
-        <div class="mt"><button id="l-create">Create listing</button></div>
-        <div class="mt small" id="l-result"></div>
-      </div>
+  <!-- ============================ landing ============================ -->
+  <main class="landing">
 
-      <div class="card" id="policy-card" hidden>
-        <h2>Policy <span class="hint">— set once, never leaves the server</span></h2>
-        <div class="row">
-          <div>
-            <label>List price</label>
-            <input id="p-list" class="num" type="number" value="240" />
-          </div>
-          <div>
-            <label>Floor <span class="muted">(private)</span></label>
-            <input id="p-floor" class="num" type="number" value="160" />
-          </div>
-        </div>
-        <div class="row">
-          <div>
-            <label>Style</label>
-            <select id="p-style">
-              <option value="firm">firm — hold out, keep more</option>
-              <option value="balanced" selected>balanced</option>
-              <option value="eager">eager — close fast, keep less</option>
-            </select>
-          </div>
-          <div>
-            <label>Deadline (rounds)</label>
-            <input id="p-deadline" class="num" type="number" value="10" />
-          </div>
-        </div>
+    <!-- hero -->
+    <section class="hero">
+      <!-- scattered hand-drawn doodles -->
+      <svg class="doodle d1" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2 L24 16 L38 20 L24 24 L20 38 L16 24 L2 20 L16 16 Z" fill="#ffe93b" stroke="#111" stroke-width="2" stroke-linejoin="round"/></svg>
+      <svg class="doodle d2" viewBox="0 0 44 60" aria-hidden="true"><path d="M22 4 L34 24 L26 24 L38 42 L26 42 L22 42 L18 42 L6 42 L18 24 L10 24 Z" fill="#8bd63f" stroke="#111" stroke-width="2" stroke-linejoin="round"/><rect x="19" y="42" width="6" height="12" fill="#111"/></svg>
+      <svg class="doodle d3" viewBox="0 0 60 30" aria-hidden="true"><path d="M2 15 Q12 2 20 15 T38 15 T56 15" fill="none" stroke="#ff95d2" stroke-width="3" stroke-linecap="round"/></svg>
+      <svg class="doodle d4" viewBox="0 0 50 50" aria-hidden="true"><circle cx="25" cy="25" r="20" fill="#fecb95" stroke="#111" stroke-width="2"/><circle cx="18" cy="22" r="2.4" fill="#111"/><circle cx="32" cy="22" r="2.4" fill="#111"/><path d="M16 30 Q25 40 34 30" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <svg class="doodle d5" viewBox="0 0 44 40" aria-hidden="true"><path d="M22 38 C6 26 2 14 12 8 C18 4 22 10 22 12 C22 10 26 4 32 8 C42 14 38 26 22 38 Z" fill="#d17aff" stroke="#111" stroke-width="2" stroke-linejoin="round"/></svg>
 
-        <label class="mt">Tactic weights <span class="muted">— normalized on the server</span></label>
-        <div class="weights" id="weights">
-          <div class="wrow"><span>time</span><input type="range" min="0" max="100" value="40" data-w="time" /><output>0.40</output></div>
-          <div class="wrow"><span>behaviour</span><input type="range" min="0" max="100" value="25" data-w="behaviour" /><output>0.25</output></div>
-          <div class="wrow"><span>scarcity</span><input type="range" min="0" max="100" value="10" data-w="scarcity" /><output>0.10</output></div>
-          <div class="wrow"><span>belief</span><input type="range" min="0" max="100" value="25" data-w="belief" /><output>0.25</output></div>
-        </div>
-
-        <div class="row mt">
-          <button id="p-save">Save policy</button>
-          <button id="p-publish" class="ghost">Publish to catalog</button>
-        </div>
-      </div>
-
-      <div class="card" id="open-card" hidden>
-        <h2>Open a negotiation</h2>
-        <label>Buyer handle</label>
-        <div class="composer" style="margin-top:0">
-          <input id="t-buyer" placeholder="buyer_alex" />
-          <button id="t-open">Open</button>
-        </div>
-        <div class="mt small muted">Each thread negotiates in parallel against the same policy.</div>
+      <p class="hero-eyebrow">for people who sell things one at a time</p>
+      <h1 class="hero-word">Haggle,<br>handled.</h1>
+      <p class="hero-lede">Listing takes three minutes. Answering the next forty messages takes three weeks. <b>Arina does the second part</b> — an agent negotiates every interested buyer, in parallel, and holds a floor it will never reveal.</p>
+      <div class="hero-cta">
+        <a class="bigbtn sell" href="dashboard.html">I'm selling →</a>
+        <a class="bigbtn shop" href="chat.html">I'm buying →</a>
       </div>
     </section>
 
-    <!-- ------------------------ right column ------------------------- -->
-    <section class="right">
-      <div class="card">
-        <h2 class="spread"><span>Live threads</span><button id="refresh" class="ghost small">Refresh</button></h2>
-        <div class="threads" id="thread-list"><span class="muted small">No threads yet. Create a listing, set a policy, open one.</span></div>
-      </div>
+    <!-- the one rule -->
+    <section class="rulebox">
+      <span class="stamp">the one rule</span>
+      <p class="rule-line">The language model reads English and writes English. <span class="under">It never decides a price.</span></p>
+      <p class="rule-gloss">Every number a buyer sees is computed from the seller's policy and a Bayesian guess at what that buyer will pay. The floor and the belief state never enter a prompt — so a reservation price that isn't in the context window can't be talked out of the agent, in any language, by any buyer.</p>
+    </section>
 
-      <div class="card" id="thread-card" hidden>
-        <h2 class="spread">
-          <span>Thread <span class="num" id="th-id"></span></span>
-          <span class="pill" id="th-status">open</span>
-        </h2>
-        <div class="stat-row" id="th-stats"></div>
-
-        <div class="convo mt" id="convo"></div>
-        <div class="composer">
-          <input id="msg-text" placeholder="Buyer says…  (try: 'would you take 180?')" />
-          <button id="msg-send">Send</button>
+    <!-- how it works -->
+    <section class="how">
+      <h2 class="sec-h">How it works</h2>
+      <div class="steps">
+        <div class="step">
+          <span class="step-n">1</span>
+          <h3>List it</h3>
+          <p>Drop in a name, a few notes, and a photo. Arina turns it into a structured listing and puts it in your shop.</p>
         </div>
-        <div class="overrides">
-          <span class="small muted" style="align-self:center;margin-right:2px">Seller override:</span>
-          <button class="ghost small" data-ov="accept_now">Accept now</button>
-          <button class="ghost small" data-ov="hold_firm">Hold firm</button>
-          <button class="ghost small" data-ov="concede">Concede</button>
+        <div class="step">
+          <span class="step-n">2</span>
+          <h3>Set your terms</h3>
+          <p>Pick a floor, a posture — <em>firm</em>, <em>balanced</em>, or <em>eager</em> — and how the agent weighs its tactics. Once.</p>
         </div>
-      </div>
-
-      <div class="card" id="belief-card" hidden>
-        <h2>Belief — where the buyer probably tops out</h2>
-        <div id="belief-chart"></div>
-        <div class="legend">
-          <span><i style="background:#d17aff"></i>posterior over buyer's reservation price</span>
-          <span><i style="background:#ff4d6d"></i>floor</span>
-          <span><i style="background:#111111"></i>list</span>
-          <span><i style="background:#15a34a"></i>optimal ask</span>
+        <div class="step">
+          <span class="step-n">3</span>
+          <h3>Let it haggle</h3>
+          <p>Buyers message. The agent counters, concedes by your policy, and closes — or walks. You watch the belief state tighten.</p>
         </div>
-
-        <h2 class="mt">Posterior tightening over rounds</h2>
-        <div id="rounds-chart"></div>
-        <div class="legend">
-          <span><i style="background:#d17aff"></i>p10–p90 band</span>
-          <span><i style="background:#111111"></i>p50 (median)</span>
-          <span><i style="background:#ff95d2"></i>buyer offers</span>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2 class="spread"><span>WhatsApp activity</span><button id="wa-refresh" class="ghost small">Refresh</button></h2>
-        <div class="devbox" id="wa-sim" hidden>
-          <div class="lbl">Dev — simulate an inbound message (no WABA needed)</div>
-          <div class="composer" style="margin-top:0">
-            <input id="wa-from" placeholder="buyer phone, e.g. 15551234" />
-            <input id="wa-product" placeholder="product / listing id — leave blank for bare text" />
-          </div>
-          <div class="composer">
-            <input id="wa-text" placeholder="buyer message, e.g. would you take 180?" />
-            <button id="wa-send">Send inbound</button>
-          </div>
-          <div class="small muted" style="margin-top:8px">Set a product id to pin the listing; leave it blank to test routing to the buyer's open thread — or ambiguity when they have several.</div>
-        </div>
-        <div class="feed" id="wa-feed"><div class="empty">No inbound messages yet.</div></div>
       </div>
     </section>
+
+    <!-- two doors -->
+    <section class="doors">
+      <h2 class="sec-h">Two ways in</h2>
+      <div class="door-grid">
+        <a class="door sell" href="dashboard.html">
+          <span class="door-tag">for sellers</span>
+          <h3>Seller dashboard</h3>
+          <p>List items, set your floor and tactics, open negotiations, and watch each buyer's belief posterior tighten round by round.</p>
+          <span class="door-go">Open the dashboard →</span>
+        </a>
+        <a class="door shop" href="chat.html">
+          <span class="door-tag">for buyers</span>
+          <h3>The shop</h3>
+          <p>Browse what's for sale, tap an item, and haggle with the agent in a chat. Make an offer — see if you can get a deal.</p>
+          <span class="door-go">Start shopping →</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- the receipt -->
+    <section class="receipt">
+      <span class="stamp pink">we measured it</span>
+      <p class="receipt-line">Put a model in the negotiating seat and it does <b>worse</b>. Over 32 held-out buyers, the deterministic engine kept <b class="hl">0.31</b> of the floor→list spread; <span class="mono">gpt-4o-mini</span> <b>0.21</b>, <span class="mono">gpt-4o</span> <b>0.20</b> — and gpt-4o sold <em>below the floor</em> 19% of the time. Cheaper, faster, and it doesn't give the store away.</p>
+      <a class="receipt-link" href="https://github.com/romina-jately/arina/blob/main/docs/RESULTS.md" target="_blank">read the full results →</a>
+    </section>
+
+    <footer class="land-foot">
+      <span>Arina® · pricing belongs in the engine, language belongs in the model</span>
+      <a href="https://github.com/romina-jately/arina" target="_blank">github.com/romina-jately/arina ↗</a>
+    </footer>
   </main>
-
-  <div class="toast" id="toast"></div>
-  <script src="app.js"></script>
 </body>
 </html>
