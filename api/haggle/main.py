@@ -46,6 +46,7 @@ async def lifespan(app: FastAPI):
     # reconstructable from its event log, so rebuild them all before the
     # first request. See CLAUDE.md build order item 1.
     rehydrate()
+    _seed()  # for a public demo: put one listing in an empty shop (HAGGLE_SEED)
     yield
 
 
@@ -408,6 +409,33 @@ def rehydrate() -> None:
             LIVE[tid] = n
 
 
+def _seed() -> None:
+    """For a public/demo deploy: if the catalog is empty, add one sample listing
+    so the shop is not blank on first load. Off unless HAGGLE_SEED is set."""
+    if not os.environ.get("HAGGLE_SEED"):
+        return
+    with store.conn() as c:
+        if c.execute("SELECT COUNT(*) AS n FROM listings").fetchone()["n"]:
+            return
+    lid = store.new_id("lst")
+    out = ListingOut(
+        id=lid, name="Vintage Levi denim jacket",
+        description="70s orange tab, size small, faded, no rips",
+        image_url="https://images.unsplash.com/photo-1543076447-215ad9ba6923?w=600",
+        price=240.0, retail_id=lid, tags=["vintage", "denim"],
+    )
+    with store.conn() as c:
+        c.execute(
+            "INSERT INTO listings(id, retail_id, seller, payload, created) VALUES (?,?,?,?,?)",
+            (lid, lid, "demo", out.model_dump_json(), time.time()),
+        )
+        c.execute(
+            "INSERT INTO policies(listing_id, payload, updated) VALUES (?,?,?)",
+            (lid, json.dumps({"list_price": 240, "floor": 160, "style": "balanced"}), time.time()),
+        )
+    store.log("listing_created", listing_id=lid, inferred={"seed": True})
+
+
 # ------------------------------ webhook ------------------------------ #
 
 @app.get("/webhooks/whatsapp")
@@ -541,8 +569,21 @@ app.include_router(api)
 # ------------------------------ dashboard ---------------------------- #
 # Serve the seller dashboard (build order item 2) from the same origin as
 # the API, so the browser needs no CORS grant and one `uvicorn` runs both.
-_WEB = Path(__file__).resolve().parents[2] / "web"
-if _WEB.is_dir():
+# Resolve web/ robustly so it works from the repo, from an install, and in a
+# container: an explicit HAGGLE_WEB_DIR wins, then the repo layout, then cwd.
+_WEB = next(
+    (
+        p
+        for p in (
+            Path(os.environ["HAGGLE_WEB_DIR"]) if os.environ.get("HAGGLE_WEB_DIR") else None,
+            Path(__file__).resolve().parents[2] / "web",
+            Path.cwd() / "web",
+        )
+        if p is not None and p.is_dir()
+    ),
+    None,
+)
+if _WEB is not None:
     @app.get("/")
     def _root() -> RedirectResponse:
         return RedirectResponse("/app/")
