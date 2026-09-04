@@ -144,6 +144,13 @@ A buyer storefront and chat (`/app/chat.html`) runs the same negotiation over
 the web, so the whole flow is testable without a business account — the buyer
 transport never carries the floor or belief state.
 
-Not yet built: the training environment that consumes `/export/events`, and
-the results table it produces. That is the point of the project; everything
-above is setup. See `CLAUDE.md`.
+The training environment is built: a `verifiers` environment
+([`environments/arina_negotiation`](environments/arina_negotiation)) that puts a
+model in the negotiating seat against a deterministic buyer, scores it on the
+section-6 objective, and reports the engine's capture on the same buyer as a
+baseline.
+
+Not yet built: the results table that environment produces — capture rate,
+close rate, latency, and cost for a small post-trained model against a frontier
+baseline. That is the point of the project; everything above is setup. See
+`CLAUDE.md`.
