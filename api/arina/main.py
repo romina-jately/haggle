@@ -29,7 +29,15 @@ from fastapi.staticfiles import StaticFiles
 
 from . import llm, store, whatsapp
 from .bargaining import Negotiation, Policy
-from .models import AgentTurn, BuyerTurn, ListingIn, ListingOut, PolicyIn
+from .models import (
+    AgentTurn,
+    BuyerMessage,
+    BuyerReply,
+    BuyerTurn,
+    ListingIn,
+    ListingOut,
+    PolicyIn,
+)
 
 
 @asynccontextmanager
@@ -213,6 +221,50 @@ async def _advance(tid: str, buyer_text: str) -> AgentTurn:
 @api.post("/threads/{tid}/message", response_model=AgentTurn)
 async def message(tid: str, body: BuyerTurn):
     return await _advance(tid, body.text)
+
+
+# ------------------------------- buyer ------------------------------- #
+# The buyer-facing surface (build order item 4): the same negotiation engine,
+# reached over the web instead of WhatsApp, so the whole flow is testable
+# without a business account. The buyer never sees the seller view — that is
+# enforced by the response type, not by remembering to strip a field.
+
+@api.get("/catalog")
+def catalog():
+    """The shoppable listings, buyer-safe. No floors, no policies, no beliefs —
+    only what a product card shows. `negotiable` says whether a policy is set,
+    i.e. whether the agent will haggle."""
+    with store.conn() as c:
+        rows = c.execute(
+            "SELECT l.payload, "
+            "(SELECT 1 FROM policies p WHERE p.listing_id = l.id) AS negotiable "
+            "FROM listings l ORDER BY l.created DESC"
+        ).fetchall()
+    out = []
+    for r in rows:
+        d = json.loads(r["payload"])
+        out.append({
+            "id": d["id"], "name": d["name"], "description": d["description"],
+            "price": d["price"], "currency": d.get("currency", "USD"),
+            "image_url": d.get("image_url"), "tags": d.get("tags", []),
+            "negotiable": bool(r["negotiable"]),
+        })
+    return out
+
+
+@api.post("/buyer/message", response_model=BuyerReply)
+async def buyer_message(body: BuyerMessage):
+    """A buyer's turn from the web chat. Resolves to the buyer's open thread on
+    this listing (opening one on the first message), exactly like inbound
+    WhatsApp with a product pin. Returns only the buyer-facing reply."""
+    tid = _thread_for_listing(body.buyer, body.listing_id)
+    if tid is None:
+        raise HTTPException(400, "this item isn't taking offers yet")
+    turn = await _advance(tid, body.text)
+    return BuyerReply(
+        text=turn.text, round=turn.round, status=turn.status,
+        quoted_price=turn.quoted_price, action=turn.action,
+    )
 
 
 def _apply_override(n: Negotiation, action: str) -> float:

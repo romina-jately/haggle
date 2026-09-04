@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arina — chat with the seller</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Arina</h1>
+    <span class="tag">buyer view</span>
+    <span class="mode" id="who">you: —</span>
+  </header>
+
+  <!-- catalog -->
+  <section class="shop" id="catalog-view">
+    <div class="shop-head">
+      <h2>Shop</h2>
+      <span class="muted small" id="shop-sub">Tap an item to message the seller. An agent answers and will haggle.</span>
+    </div>
+    <div class="grid" id="grid"><div class="empty">Loading listings…</div></div>
+  </section>
+
+  <!-- chat -->
+  <section class="chatwrap" id="chat-view" hidden>
+    <div class="chat-head">
+      <span class="back" id="back" title="Back to shop">‹</span>
+      <div class="thumb" id="c-thumb"></div>
+      <div class="meta">
+        <span class="nm" id="c-name"></span>
+        <span class="pr" id="c-price"></span>
+      </div>
+    </div>
+    <div class="trust">🔒 You're messaging the seller's negotiating agent. Offers are handled automatically.</div>
+    <div class="thread" id="thread"></div>
+    <div id="c-banner"></div>
+    <div class="chat-composer" id="composer">
+      <input id="c-text" placeholder="Make an offer, e.g. would you take $180?" />
+      <button id="c-send">Send</button>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+  <script src="chat.js"></script>
+</body>
+</html>

@@ -140,5 +140,10 @@ end; a dev inbound endpoint exercises routing without one, and with no
 `ANTHROPIC_API_KEY` the language paths fall back to templates so the whole
 thing runs offline.
 
-Not yet built, in order: buyer-side chat, and the training environment that
-consumes `/export/events`. See `CLAUDE.md`.
+A buyer storefront and chat (`/app/chat.html`) runs the same negotiation over
+the web, so the whole flow is testable without a business account — the buyer
+transport never carries the floor or belief state.
+
+Not yet built: the training environment that consumes `/export/events`, and
+the results table it produces. That is the point of the project; everything
+above is setup. See `CLAUDE.md`.

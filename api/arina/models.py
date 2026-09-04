@@ -69,3 +69,24 @@ class AgentTurn(BaseModel):
     quoted_price: float | None = None
     action: Literal["counter", "accept", "answer", "walk"]
     seller_view: dict | None = None
+
+
+class BuyerMessage(BaseModel):
+    """A buyer's turn over the web transport. `buyer` is the web handle; the
+    listing is the item they opened the chat from."""
+
+    buyer: str = Field(min_length=1, max_length=80)
+    listing_id: str = Field(min_length=1, max_length=80)
+    text: str = Field(min_length=1, max_length=1200)
+
+
+class BuyerReply(BaseModel):
+    """What the buyer transport returns. Deliberately has no `seller_view`
+    field at all: the rationale and belief state cannot leak through a type
+    that cannot hold them. See CLAUDE.md — the belief never reaches a buyer."""
+
+    text: str
+    round: int
+    status: Literal["open", "closed", "walked"]
+    quoted_price: float | None = None
+    action: Literal["counter", "accept", "answer", "walk"]

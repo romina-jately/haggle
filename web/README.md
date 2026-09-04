@@ -1,11 +1,19 @@
 # web
 
-Seller dashboard (build order item 2). Buyer chat (item 4) is still to come.
+Seller dashboard (build order item 2) and buyer chat (item 4).
 
-Zero build step: three static files — `index.html`, `styles.css`, `app.js` —
-served by the API at `/app` (the API mounts this directory), so there is no
-CORS to configure and one `uvicorn` runs both. Open http://localhost:8000/
-and it redirects to the dashboard.
+Zero build step: static files — `index.html` / `styles.css` / `app.js` for the
+seller, `chat.html` / `chat.js` for the buyer, one shared stylesheet — served
+by the API at `/app` (the API mounts this directory), so there is no CORS to
+configure and one `uvicorn` runs both. Open http://localhost:8000/ for the
+dashboard; the buyer storefront is at `/app/chat.html` (linked from the
+dashboard header as "buyer view").
+
+The buyer side talks only to `/catalog` and `/buyer/message` — endpoints that
+by construction never carry the floor, the belief state, or the agent's
+rationale (`models.BuyerReply` has no field they could ride in on). It's the
+same negotiation engine as WhatsApp, over the web, so the whole flow is
+testable without a business account.
 
 Nothing here computes a price. It asks the server and renders what comes
 back. The belief posterior in particular is read straight off
