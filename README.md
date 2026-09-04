@@ -150,7 +150,9 @@ model in the negotiating seat against a deterministic buyer, scores it on the
 section-6 objective, and reports the engine's capture on the same buyer as a
 baseline.
 
-Not yet built: the results table that environment produces — capture rate,
-close rate, latency, and cost for a small post-trained model against a frontier
-baseline. That is the point of the project; everything above is setup. See
-`CLAUDE.md`.
+And the results table it produces is in [`docs/RESULTS.md`](docs/RESULTS.md).
+The short version, over 32 held-out buyers: the deterministic engine captures
+**0.309** of the floor→list spread; `gpt-4o-mini` **0.208**, `gpt-4o` **0.200** —
+and `gpt-4o` sold *below the seller's floor* in 19% of its closes, at ~300× the
+latency and real cost per negotiation. Pricing belongs in the engine; language
+belongs in the model. That is the whole project, measured.
