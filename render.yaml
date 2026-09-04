@@ -1,0 +1,18 @@
+# Render Blueprint for Haggle.
+# Render dashboard -> New + -> Blueprint -> pick the `haggle` repo -> Apply.
+# Render reads this file, builds the Dockerfile, and deploys a web service.
+services:
+  - type: web
+    name: haggle
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free            # free tier; sleeps when idle, wakes on the next request
+    healthCheckPath: /health
+    autoDeploy: true      # redeploy on every push to the default branch
+    envVars:
+      - key: HAGGLE_SEED  # put one sample listing in the shop on first boot
+        value: "1"
+      # To use a real model for phrasing instead of offline templates, add your
+      # own key here in the Render dashboard (Environment tab), never in the repo:
+      # - key: ANTHROPIC_API_KEY
+      #   sync: false
