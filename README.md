@@ -32,19 +32,39 @@ Full derivation in [`docs/NEGOTIATION.md`](docs/NEGOTIATION.md).
 
 ---
 
-## Quickstart
+## Run it yourself
 
 ```bash
-cd api
+git clone https://github.com/romina-jately/arina
+cd arina/api
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 pytest                          # 23 tests, no network, no keys needed
-cp .env.example .env            # fill in for the LLM and WhatsApp paths
-uvicorn arina.main:app --reload
+uvicorn arina.main:app
 ```
 
-The negotiation engine has no dependencies beyond the standard library and
-runs offline. You only need keys for listing extraction and for WhatsApp.
+Then open **http://localhost:8000/** — a landing page linking the **seller
+dashboard** and the **buyer shop**. Create a listing, set a floor and a
+posture, open the shop, and haggle with the agent. No account, no build step.
+
+**It runs fully offline, with no API key.** In offline mode the agent phrases
+its replies from templates; every price is still computed by the engine. That
+is enough to use the whole app end to end.
+
+### Bring your own key
+
+Nothing in this repo ships a key, and you should use **your own** — never
+anyone else's:
+
+- **Fluent phrasing** (optional): `cp .env.example .env` and set your own
+  `ANTHROPIC_API_KEY`. Language only — the model never sees a price or a floor.
+- **The results eval** ([`environments/arina_negotiation`](environments/arina_negotiation)):
+  set your own `OPENAI_API_KEY`, or point `--client.base-url` at any provider.
+  See [`docs/RESULTS.md`](docs/RESULTS.md).
+
+`.env` is gitignored. Keep keys in your own environment and never commit them.
+The engine itself has no dependencies beyond the standard library and needs no
+key at all.
 
 Watch the three postures diverge against the same buyer:
 

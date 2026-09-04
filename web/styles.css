@@ -240,6 +240,16 @@ svg text { font-family: var(--mono); }
 .k.inbound { color: var(--purple); }
 .k.outbound, .k.order { color: var(--ink-dim); }
 
+/* decorative doodles on the app pages — live in the page margins, never
+   over the UI (hidden on narrow screens where there is no margin) */
+.app-doodles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.app-doodles .doodle { position: absolute; }
+.app-doodles .a1 { width: 30px; left: 16px; top: 120px; transform: rotate(-14deg); }
+.app-doodles .a2 { width: 40px; left: 20px; bottom: 40px; transform: rotate(9deg); }
+.app-doodles .a3 { width: 46px; right: 18px; top: 150px; transform: rotate(10deg); }
+.app-doodles .a4 { width: 34px; right: 22px; bottom: 46px; transform: rotate(-10deg); }
+@media (max-width: 1120px) { .app-doodles { display: none; } }
+
 /* ============================ landing ============================ */
 .landing { max-width: 960px; margin: 0 auto; padding: 20px 24px 70px; }
 
