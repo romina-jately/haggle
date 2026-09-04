@@ -4,9 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Arina — seller dashboard</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
+  <div class="ticker">✦ list it once, let the agent haggle · your floor never leaves the server ✦</div>
   <header>
     <h1>Arina</h1>
     <span class="tag">seller dashboard</span>
@@ -121,18 +122,18 @@
         <h2>Belief — where the buyer probably tops out</h2>
         <div id="belief-chart"></div>
         <div class="legend">
-          <span><i style="background:#4c9be8"></i>posterior over buyer's reservation price</span>
-          <span><i style="background:#f2727f"></i>floor</span>
-          <span><i style="background:#e6edf3"></i>list</span>
-          <span><i style="background:#7ee0c0"></i>optimal ask</span>
+          <span><i style="background:#d17aff"></i>posterior over buyer's reservation price</span>
+          <span><i style="background:#ff4d6d"></i>floor</span>
+          <span><i style="background:#111111"></i>list</span>
+          <span><i style="background:#15a34a"></i>optimal ask</span>
         </div>
 
         <h2 class="mt">Posterior tightening over rounds</h2>
         <div id="rounds-chart"></div>
         <div class="legend">
-          <span><i style="background:#4c9be8"></i>p10–p90 band</span>
-          <span><i style="background:#e6edf3"></i>p50 (median)</span>
-          <span><i style="background:#e3b341"></i>buyer offers</span>
+          <span><i style="background:#d17aff"></i>p10–p90 band</span>
+          <span><i style="background:#111111"></i>p50 (median)</span>
+          <span><i style="background:#ff95d2"></i>buyer offers</span>
         </div>
       </div>
 

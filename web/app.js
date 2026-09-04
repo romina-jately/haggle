@@ -343,17 +343,17 @@ function drawDensity(s) {
 
   const b = s.belief.summary;
   const inner =
-    `<path d="${d}" fill="#4c9be833" stroke="#4c9be8" stroke-width="1.5"/>` +
-    vline(s.policy.floor, "#f2727f", "floor") +
-    vline(s.policy.list_price, "#e6edf3", "list") +
-    vline(s.belief.optimal_ask, "#7ee0c0", "ask", "3 3") +
-    vline(b.p50, "#9aa7b4", "p50", "2 2") +
+    `<path d="${d}" fill="#d17aff33" stroke="#d17aff" stroke-width="1.5"/>` +
+    vline(s.policy.floor, "#ff4d6d", "floor") +
+    vline(s.policy.list_price, "#111111", "list") +
+    vline(s.belief.optimal_ask, "#15a34a", "ask", "3 3") +
+    vline(b.p50, "#8a8a82", "p50", "2 2") +
     // x ticks
     [0, 0.5, 1].map((t) => {
       const v = lerp(xmin, xmax, t);
-      return `<text x="${X(v).toFixed(1)}" y="${H - padB + 15}" fill="#6b7885" font-size="10" text-anchor="middle">${money(v)}</text>`;
+      return `<text x="${X(v).toFixed(1)}" y="${H - padB + 15}" fill="#8a8a82" font-size="10" text-anchor="middle">${money(v)}</text>`;
     }).join("") +
-    `<line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="#2a323d"/>`;
+    `<line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="#111111"/>`;
   $("#belief-chart").innerHTML = svg(W, H, inner);
 }
 
@@ -376,14 +376,14 @@ function drawRounds(s) {
   let up = "", dn = "";
   rows.forEach((r, i) => { up += `${i ? "L" : "M"} ${X(r.r).toFixed(1)} ${Y(r.p90).toFixed(1)} `; });
   for (let i = rows.length - 1; i >= 0; i--) dn += `L ${X(rows[i].r).toFixed(1)} ${Y(rows[i].p10).toFixed(1)} `;
-  const band = rows.length > 1 ? `<path d="${up}${dn}Z" fill="#4c9be822" stroke="none"/>` : "";
+  const band = rows.length > 1 ? `<path d="${up}${dn}Z" fill="#d17aff22" stroke="none"/>` : "";
 
   // p50 line + points
   let p50 = "";
   rows.forEach((r, i) => { p50 += `${i ? "L" : "M"} ${X(r.r).toFixed(1)} ${Y(r.p50).toFixed(1)} `; });
-  const p50line = `<path d="${p50}" fill="none" stroke="#e6edf3" stroke-width="1.5"/>`;
+  const p50line = `<path d="${p50}" fill="none" stroke="#111111" stroke-width="1.5"/>`;
   const dots = rows.map((r) =>
-    (r.offer != null ? `<circle cx="${X(r.r).toFixed(1)}" cy="${Y(r.offer).toFixed(1)}" r="3" fill="#e3b341"/>` : "")
+    (r.offer != null ? `<circle cx="${X(r.r).toFixed(1)}" cy="${Y(r.offer).toFixed(1)}" r="3" fill="#ff95d2"/>` : "")
   ).join("");
 
   // floor / list guides + y labels
@@ -391,12 +391,12 @@ function drawRounds(s) {
     `<line x1="${padL}" y1="${Y(v).toFixed(1)}" x2="${W - padR}" y2="${Y(v).toFixed(1)}" stroke="${color}" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>` +
     `<text x="2" y="${Y(v) + 3}" fill="${color}" font-size="9">${money(v)}</text>`;
 
-  const xticks = rows.map((r) => `<text x="${X(r.r).toFixed(1)}" y="${H - padB + 14}" fill="#6b7885" font-size="9" text-anchor="middle">${r.r}</text>`).join("");
+  const xticks = rows.map((r) => `<text x="${X(r.r).toFixed(1)}" y="${H - padB + 14}" fill="#8a8a82" font-size="9" text-anchor="middle">${r.r}</text>`).join("");
 
   host.innerHTML = svg(W, H,
-    guide(s.policy.floor, "#f2727f", "") + guide(s.policy.list_price, "#e6edf3", "") +
+    guide(s.policy.floor, "#ff4d6d", "") + guide(s.policy.list_price, "#111111", "") +
     band + p50line + dots + xticks +
-    `<text x="${(padL + W) / 2}" y="${H - 2}" fill="#6b7885" font-size="9" text-anchor="middle">round</text>`);
+    `<text x="${(padL + W) / 2}" y="${H - 2}" fill="#8a8a82" font-size="9" text-anchor="middle">round</text>`);
 }
 
 // -------------------------- whatsapp feed --------------------------- //
