@@ -20,8 +20,11 @@ import json
 import os
 import re
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from . import llm, store, whatsapp
 from .bargaining import Negotiation, Policy
@@ -233,12 +236,37 @@ def override(tid: str, action: str):
     return {"ok": True, "agent_price": n.agent_price, "status": n.status}
 
 
+def _belief_payload(n: Negotiation) -> dict:
+    """The seller's-eye view of the posterior, for the dashboard chart.
+
+    This is a seller endpoint and the belief state is the seller's to see.
+    It must still never reach a buyer or a prompt (CLAUDE.md, the one rule),
+    which is exactly why it is assembled here in the service and not in
+    llm.py. The grid and posterior are what let the dashboard draw the whole
+    distribution rather than a handful of quantiles.
+    """
+    ask, ev = n.belief.optimal_price(floor=n.policy.floor, ceiling=n.policy.list_price)
+    return {
+        "grid": [round(v, 2) for v in n.belief.grid],
+        "post": n.belief.post,
+        "optimal_ask": round(ask, 2),
+        "optimal_ev": round(ev, 2),
+        "summary": n.belief.summary(),
+    }
+
+
 @api.get("/threads/{tid}")
 def thread_state(tid: str):
     n = _thread(tid)
     return {
         "status": n.status, "round": n.round, "agent_price": n.agent_price,
-        "offers": n.offers, "capture": n.capture, "belief": n.belief.summary(),
+        "offers": n.offers, "capture": n.capture,
+        "policy": {
+            "list_price": n.policy.list_price, "floor": n.policy.floor,
+            "style": n.policy.style, "weights": n.policy.weights,
+            "deadline_rounds": n.policy.deadline_rounds,
+        },
+        "belief": _belief_payload(n),
         "turns": [t.__dict__ for t in n.turns],
     }
 
@@ -246,6 +274,13 @@ def thread_state(tid: str):
 @api.get("/export/events")
 def export(kind: str | None = None):
     return store.export_events(kind)
+
+
+@api.get("/health")
+def health():
+    """Cheap liveness plus one bit the dashboard wants: whether the language
+    paths have a key or are running the offline templates."""
+    return {"ok": True, "offline": not llm._has_key(), "live_threads": len(LIVE)}
 
 
 # ---------------------------- rehydration ---------------------------- #
@@ -313,3 +348,15 @@ async def inbound(request: Request):
 
 
 app.include_router(api)
+
+
+# ------------------------------ dashboard ---------------------------- #
+# Serve the seller dashboard (build order item 2) from the same origin as
+# the API, so the browser needs no CORS grant and one `uvicorn` runs both.
+_WEB = Path(__file__).resolve().parents[2] / "web"
+if _WEB.is_dir():
+    @app.get("/")
+    def _root() -> RedirectResponse:
+        return RedirectResponse("/app/")
+
+    app.mount("/app", StaticFiles(directory=str(_WEB), html=True), name="app")

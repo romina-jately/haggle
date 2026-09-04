@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arina — seller dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Arina</h1>
+    <span class="tag">seller dashboard</span>
+    <span class="mode" id="mode">connecting…</span>
+  </header>
+
+  <main>
+    <!-- ------------------------- left column ------------------------- -->
+    <section class="left">
+      <div class="card">
+        <h2>New listing <span class="hint">— notes in, structured listing out</span></h2>
+        <label>Name</label>
+        <input id="l-name" placeholder="Vintage Levi's denim jacket" />
+        <label>Description / notes</label>
+        <textarea id="l-desc" placeholder="70s orange tab, small, a bit faded, no rips"></textarea>
+        <div class="row">
+          <div>
+            <label>Price (USD)</label>
+            <input id="l-price" class="num" type="number" value="240" />
+          </div>
+          <div>
+            <label>Image URL</label>
+            <input id="l-img" placeholder="https://…" />
+          </div>
+        </div>
+        <img class="preview" id="l-preview" alt="" hidden />
+        <div class="mt"><button id="l-create">Create listing</button></div>
+        <div class="mt small" id="l-result"></div>
+      </div>
+
+      <div class="card" id="policy-card" hidden>
+        <h2>Policy <span class="hint">— set once, never leaves the server</span></h2>
+        <div class="row">
+          <div>
+            <label>List price</label>
+            <input id="p-list" class="num" type="number" value="240" />
+          </div>
+          <div>
+            <label>Floor <span class="muted">(private)</span></label>
+            <input id="p-floor" class="num" type="number" value="160" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Style</label>
+            <select id="p-style">
+              <option value="firm">firm — hold out, keep more</option>
+              <option value="balanced" selected>balanced</option>
+              <option value="eager">eager — close fast, keep less</option>
+            </select>
+          </div>
+          <div>
+            <label>Deadline (rounds)</label>
+            <input id="p-deadline" class="num" type="number" value="10" />
+          </div>
+        </div>
+
+        <label class="mt">Tactic weights <span class="muted">— normalized on the server</span></label>
+        <div class="weights" id="weights">
+          <div class="wrow"><span>time</span><input type="range" min="0" max="100" value="40" data-w="time" /><output>0.40</output></div>
+          <div class="wrow"><span>behaviour</span><input type="range" min="0" max="100" value="25" data-w="behaviour" /><output>0.25</output></div>
+          <div class="wrow"><span>scarcity</span><input type="range" min="0" max="100" value="10" data-w="scarcity" /><output>0.10</output></div>
+          <div class="wrow"><span>belief</span><input type="range" min="0" max="100" value="25" data-w="belief" /><output>0.25</output></div>
+        </div>
+
+        <div class="row mt">
+          <button id="p-save">Save policy</button>
+          <button id="p-publish" class="ghost">Publish to catalog</button>
+        </div>
+      </div>
+
+      <div class="card" id="open-card" hidden>
+        <h2>Open a negotiation</h2>
+        <label>Buyer handle</label>
+        <div class="composer" style="margin-top:0">
+          <input id="t-buyer" placeholder="buyer_alex" />
+          <button id="t-open">Open</button>
+        </div>
+        <div class="mt small muted">Each thread negotiates in parallel against the same policy.</div>
+      </div>
+    </section>
+
+    <!-- ------------------------ right column ------------------------- -->
+    <section class="right">
+      <div class="card">
+        <h2 class="spread"><span>Live threads</span><button id="refresh" class="ghost small">Refresh</button></h2>
+        <div class="threads" id="thread-list"><span class="muted small">No threads yet. Create a listing, set a policy, open one.</span></div>
+      </div>
+
+      <div class="card" id="thread-card" hidden>
+        <h2 class="spread">
+          <span>Thread <span class="num" id="th-id"></span></span>
+          <span class="pill" id="th-status">open</span>
+        </h2>
+        <div class="stat-row" id="th-stats"></div>
+
+        <div class="convo mt" id="convo"></div>
+        <div class="composer">
+          <input id="msg-text" placeholder="Buyer says…  (try: 'would you take 180?')" />
+          <button id="msg-send">Send</button>
+        </div>
+        <div class="overrides">
+          <span class="small muted" style="align-self:center;margin-right:2px">Seller override:</span>
+          <button class="ghost small" data-ov="accept_now">Accept now</button>
+          <button class="ghost small" data-ov="hold_firm">Hold firm</button>
+          <button class="ghost small" data-ov="concede">Concede</button>
+        </div>
+      </div>
+
+      <div class="card" id="belief-card" hidden>
+        <h2>Belief — where the buyer probably tops out</h2>
+        <div id="belief-chart"></div>
+        <div class="legend">
+          <span><i style="background:#4c9be8"></i>posterior over buyer's reservation price</span>
+          <span><i style="background:#f2727f"></i>floor</span>
+          <span><i style="background:#e6edf3"></i>list</span>
+          <span><i style="background:#7ee0c0"></i>optimal ask</span>
+        </div>
+
+        <h2 class="mt">Posterior tightening over rounds</h2>
+        <div id="rounds-chart"></div>
+        <div class="legend">
+          <span><i style="background:#4c9be8"></i>p10–p90 band</span>
+          <span><i style="background:#e6edf3"></i>p50 (median)</span>
+          <span><i style="background:#e3b341"></i>buyer offers</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

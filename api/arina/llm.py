@@ -89,12 +89,51 @@ def _carve(raw: str) -> dict:
     return json.loads(s[a : b + 1])
 
 
+def _has_key() -> bool:
+    return bool(os.environ.get("ANTHROPIC_API_KEY"))
+
+
+# ---------------------------- offline mode --------------------------- #
+# With no ANTHROPIC_API_KEY set, the language paths fall back to
+# deterministic templates so the whole service runs on a fresh clone: the
+# engine, the dashboard, and the belief chart all work without a key. This
+# is language only. It decides nothing, and — because there is no prompt at
+# all here — it does not weaken the one rule: a price the model never sees
+# cannot be talked out of it. Set a key to get real, fluent phrasing.
+
+def _offline_blurb(name: str, description: str) -> dict:
+    text = (description or name or "").strip()
+    blurb = " ".join(text.split()[:12]) or name
+    return {"size": None, "condition": None, "era": None, "material": None,
+            "tags": [], "blurb": blurb}
+
+
+def _offline_message(action: str, number: float | None, first: bool) -> str:
+    amount = "" if number is None else f"${round(number)}"
+    lead = ("Quick note: I'm the seller's agent handling messages for this item. "
+            if first else "")
+    if action == "counter":
+        return f"{lead}I can do {amount} — it's in good shape and fairly priced. Work for you?"
+    if action == "accept":
+        return f"{lead}Deal at {amount}. I'll follow up with the next steps to close it out."
+    if action == "answer":
+        return f"{lead}Happy to help with that. What would you like to offer?"
+    if action == "walk":
+        return (f"{lead}I don't think we'll land on a number today, but the door's open "
+                "if you'd like to revisit.")
+    return f"{lead}{amount}".strip()
+
+
 async def read_listing(name: str, description: str) -> dict:
+    if not _has_key():
+        return _offline_blurb(name, description)
     return await _call(READ_SYS, f"{name}\n{description}", 600)
 
 
 async def write_message(*, item: str, history: list[str], buyer_message: str,
                         action: str, number: float | None, first: bool) -> str:
+    if not _has_key():
+        return _offline_message(action, number, first)
     out = await _call(
         WRITE_SYS,
         {
